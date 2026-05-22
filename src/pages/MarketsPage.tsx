@@ -9,7 +9,7 @@ import {
   predictionMarketAbi,
   predictionMarketAddress,
 } from '../contracts/predictionMarket';
-import { toMarket, type MarketTuple } from '../lib/market';
+import { toMarket, type PolyPredictMarketRaw } from '../lib/market';
 
 export function MarketsPage() {
   if (!isMarketAddressConfigured || !predictionMarketAddress) {
@@ -45,7 +45,7 @@ function MarketsContent({
   });
 
   const markets =
-    (marketsQuery.data as MarketTuple[] | undefined)?.map((marketResult, index) =>
+    (marketsQuery.data as PolyPredictMarketRaw[] | undefined)?.map((marketResult, index) =>
       toMarket(BigInt(index), marketResult),
     ) ?? [];
   const isLoading = marketCountQuery.isPending || marketsQuery.isPending;
@@ -56,7 +56,7 @@ function MarketsContent({
       <SectionHeader
         eyebrow="Markets"
         title="예측시장"
-        description="진행 중인 시장을 확인하고 원하는 결과에 ETH로 베팅할 수 있습니다. 모든 정보는 연결된 스마트 컨트랙트에서 직접 조회합니다."
+        description="진행 중인 시장을 확인하고 USDC로 YES/NO 조건부 토큰 포지션을 발행할 수 있습니다. 모든 정보는 PolyPredict 컨트랙트에서 직접 조회합니다."
         action={
           <div className="grid min-w-72 grid-cols-2 gap-3">
             <StatCard label="전체 시장" value={marketCount.toString()} />

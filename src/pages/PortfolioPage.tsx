@@ -16,12 +16,12 @@ import {
   predictionMarketAddress,
 } from '../contracts/predictionMarket';
 import {
-  formatEth,
+  formatUsdc,
   getMarketStatusLabel,
   getWinningOutcomeName,
   toMarket,
   type Market,
-  type MarketTuple,
+  type PolyPredictMarketRaw,
   type OutcomeId,
 } from '../lib/market';
 import {
@@ -83,88 +83,62 @@ function PortfolioContent({
     query: { enabled: isConnected && marketIds.length > 0 },
   });
 
-  const betsQuery = useReadContracts({
-    allowFailure: false,
-    contracts: marketIds.flatMap((marketId) => [
-      {
-        address: contractAddress,
-        abi: predictionMarketAbi,
-        functionName: 'getUserBet',
-        args: [marketId, address!, 0],
-      },
-      {
-        address: contractAddress,
-        abi: predictionMarketAbi,
-        functionName: 'getUserBet',
-        args: [marketId, address!, 1],
-      },
-    ]),
-    query: { enabled: isConnected && Boolean(address) && marketIds.length > 0 },
-  });
-
-  const claimedQuery = useReadContracts({
+  const sharesQuery = useReadContracts({
     allowFailure: false,
     contracts: marketIds.map((marketId) => ({
       address: contractAddress,
       abi: predictionMarketAbi,
-      functionName: 'claimed',
+      functionName: 'getShareBalances',
       args: [marketId, address!],
     })),
     query: { enabled: isConnected && Boolean(address) && marketIds.length > 0 },
   });
 
   const markets =
-    (marketsQuery.data as MarketTuple[] | undefined)?.map((marketResult, index) =>
+    (marketsQuery.data as PolyPredictMarketRaw[] | undefined)?.map((marketResult, index) =>
       toMarket(BigInt(index), marketResult),
     ) ?? [];
-  const betAmounts = (betsQuery.data as bigint[] | undefined) ?? [];
-  const claimedByMarket = (claimedQuery.data as boolean[] | undefined) ?? [];
+  const shareBalances = (sharesQuery.data as readonly [bigint, bigint][] | undefined) ?? [];
 
   const positions = useMemo(() => {
     return markets.flatMap((market, index) => {
-      const betA = betAmounts[index * 2] ?? 0n;
-      const betB = betAmounts[index * 2 + 1] ?? 0n;
-      const hasClaimed = claimedByMarket[index] ?? false;
+      const [yesBalance = 0n, noBalance = 0n] = shareBalances[index] ?? [0n, 0n];
       const userPositions: Position[] = [];
 
-      if (betA > 0n) {
+      if (yesBalance > 0n) {
         userPositions.push({
           market,
           outcome: 0,
           outcomeName: market.outcomeA,
-          amount: betA,
-          hasClaimed,
+          amount: yesBalance,
+          hasClaimed: market.resolved && yesBalance === 0n,
         });
       }
 
-      if (betB > 0n) {
+      if (noBalance > 0n) {
         userPositions.push({
           market,
           outcome: 1,
           outcomeName: market.outcomeB,
-          amount: betB,
-          hasClaimed,
+          amount: noBalance,
+          hasClaimed: market.resolved && noBalance === 0n,
         });
       }
 
       return userPositions;
     });
-  }, [betAmounts, claimedByMarket, markets]);
+  }, [markets, shareBalances]);
 
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
   const isLoading =
     isConnected &&
-    (marketCountQuery.isPending ||
-      marketsQuery.isPending ||
-      betsQuery.isPending ||
-      claimedQuery.isPending);
+    (marketCountQuery.isPending || marketsQuery.isPending || sharesQuery.isPending);
   const isBusy = isPending || isConfirming;
 
   useEffect(() => {
     if (isSuccess) {
       void marketsQuery.refetch();
-      void betsQuery.refetch();
-      void claimedQuery.refetch();
+      void sharesQuery.refetch();
     }
   }, [isSuccess]);
 
@@ -240,7 +214,7 @@ function PortfolioContent({
         {positions.map((position) => {
           const isWinningPosition =
             position.market.resolved && position.market.winningOutcome === position.outcome;
-          const canClaim = isWinningPosition && !position.hasClaimed;
+          const canClaim = isWinningPosition && position.amount > 0n;
           const claimStatus = getClaimStatus(position);
 
           return (
@@ -265,7 +239,7 @@ function PortfolioContent({
                   <StatCard
                     icon={<CircleDollarSign className="h-4 w-4" aria-hidden="true" />}
                     label="베팅 금액"
-                    value={formatEth(position.amount)}
+                    value={formatUsdc(position.amount)}
                   />
                   <StatCard label="시장 상태" value={getMarketStatusLabel(position.market)} />
                   <StatCard

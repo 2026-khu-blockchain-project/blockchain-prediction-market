@@ -21,13 +21,14 @@ import {
   predictionMarketAddress,
 } from '../contracts/predictionMarket';
 import {
-  formatEth,
+  formatUsdc,
   getMarketStatusLabel,
   getTotalPool,
   getWinningOutcomeName,
   toMarket,
+  uiOutcomeToContractOutcome,
   type Market,
-  type MarketTuple,
+  type PolyPredictMarketRaw,
   type OutcomeId,
 } from '../lib/market';
 import {
@@ -47,6 +48,7 @@ type MarketForm = {
   category: string;
   outcomeA: string;
   outcomeB: string;
+  deadlineDays: string;
 };
 
 const emptyForm: MarketForm = {
@@ -55,6 +57,7 @@ const emptyForm: MarketForm = {
   category: '',
   outcomeA: '',
   outcomeB: '',
+  deadlineDays: '7',
 };
 
 export function AdminPanel({
@@ -78,7 +81,7 @@ export function AdminPanel({
     functionName: 'marketCount',
   });
 
-  const marketCount = marketCountQuery.data ?? 0n;
+  const marketCount = (marketCountQuery.data as bigint | undefined) ?? 0n;
   const marketIds = Array.from({ length: Number(marketCount) }, (_, index) => BigInt(index));
   const marketsQuery = useReadContracts({
     allowFailure: false,
@@ -93,7 +96,7 @@ export function AdminPanel({
 
   const markets = useMemo(
     () =>
-      ((marketsQuery.data as MarketTuple[] | undefined) ?? []).map((marketResult, index) =>
+      ((marketsQuery.data as PolyPredictMarketRaw[] | undefined) ?? []).map((marketResult, index) =>
         toMarket(BigInt(index), marketResult),
       ),
     [marketsQuery.data],
@@ -106,12 +109,13 @@ export function AdminPanel({
 
   const createBusy = createWrite.isPending || createReceipt.isLoading;
   const resolveBusy = resolveWrite.isPending || resolveReceipt.isLoading;
-  const owner = ownerQuery.data?.toLowerCase();
+  const owner = ownerQuery.data ? String(ownerQuery.data).toLowerCase() : undefined;
   const currentAddress = address?.toLowerCase();
   const isOwner = Boolean(owner && currentAddress && owner === currentAddress);
   const unresolvedMarkets = markets.filter((market) => !market.resolved);
-  const shortOwner = ownerQuery.data
-    ? `${ownerQuery.data.slice(0, 6)}...${ownerQuery.data.slice(-4)}`
+  const ownerAddress = ownerQuery.data ? String(ownerQuery.data) : undefined;
+  const shortOwner = ownerAddress
+    ? `${ownerAddress.slice(0, 6)}...${ownerAddress.slice(-4)}`
     : '-';
 
   function refetchMarkets() {
@@ -146,6 +150,14 @@ export function AdminPanel({
       return;
     }
 
+    const deadlineDays = Number(form.deadlineDays);
+    if (!Number.isFinite(deadlineDays) || deadlineDays <= 0) {
+      setFormError('마감일은 1일 이상으로 설정해주세요.');
+      return;
+    }
+
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineDays * 24 * 60 * 60);
+
     createWrite.writeContract({
       address: contractAddress,
       abi: predictionMarketAbi,
@@ -156,6 +168,7 @@ export function AdminPanel({
         form.category.trim(),
         outcomeA,
         outcomeB,
+        deadline,
       ],
     });
   }
@@ -167,7 +180,7 @@ export function AdminPanel({
       address: contractAddress,
       abi: predictionMarketAbi,
       functionName: 'resolveMarket',
-      args: [market.id, selectedOutcome],
+      args: [market.id, uiOutcomeToContractOutcome(selectedOutcome)],
     });
   }
 
@@ -286,6 +299,12 @@ export function AdminPanel({
             value={form.outcomeB}
             onChange={(value) => setForm((prev) => ({ ...prev, outcomeB: value }))}
           />
+          <TextInput
+            label="마감까지 (일)"
+            required
+            value={form.deadlineDays}
+            onChange={(value) => setForm((prev) => ({ ...prev, deadlineDays: value }))}
+          />
 
           <div className="space-y-3 md:col-span-2">
             {formError && <AlertMessage tone="error">{formError}</AlertMessage>}
@@ -381,7 +400,7 @@ export function AdminPanel({
                     </div>
                     <h3 className="mt-4 text-lg font-black text-slate-950">{market.title}</h3>
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                      <StatCard label="총 예치금" value={formatEth(getTotalPool(market))} />
+                      <StatCard label="총 담보(USDC)" value={formatUsdc(getTotalPool(market))} />
                       <StatCard label="후보 A" value={market.outcomeA} />
                       <StatCard label="후보 B" value={market.outcomeB} />
                     </div>

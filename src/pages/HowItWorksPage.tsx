@@ -16,8 +16,8 @@ const steps = [
   },
   {
     number: '03',
-    title: '후보 A/B 중 하나에 베팅',
-    description: '원하는 후보를 선택하고 ETH 금액을 입력하면 placeBet()으로 베팅합니다.',
+    title: 'USDC로 포지션 발행',
+    description: 'USDC를 승인한 뒤 mintShares()로 YES·NO 조건부 토큰을 발행합니다.',
     icon: Coins,
   },
   {

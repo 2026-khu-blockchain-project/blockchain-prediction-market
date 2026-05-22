@@ -1,84 +1,70 @@
 # Polymarket Lite dApp
 
-React + Vite + TypeScript 기반의 블록체인 예측시장 dApp입니다. 프론트는 Sepolia에
-배포된 `PredictionMarket` 컨트랙트에서 시장 목록, 상세 정보, 포지션, 관리자 작업을
-직접 조회하고 실행합니다.
+React + Vite + TypeScript 기반의 블록체인 예측시장 dApp입니다. 프론트 UI와 지갑 연동(RainbowKit + wagmi)은 유지하고, 온체인 로직은 **PolyPredict**(CTF 스타일 YES/NO ERC-1155 + USDC 담보)를 사용합니다.
 
 ## 실행 구조
 
-- Smart contract: Sepolia testnet
+- Smart contract: **Polygon Amoy** testnet (chainId `80002`)
+- Collateral: **MockUSDC** (테스트넷) / Polygon USDC (메인넷 배포 시)
+- Core contract: **PolyPredict** (`mintShares`, `burnShares`, `resolveMarket`, `claimWinnings`)
 - Frontend: Vercel
 - Wallet: MetaMask 또는 WalletConnect 호환 지갑
-- Chain ID: `11155111`
-
-프론트 런타임은 localhost, Hardhat Local, `31337` 체인을 사용하지 않습니다.
 
 ## Frontend Env
 
-프로젝트 루트의 `.env` 또는 Vercel Project Settings > Environment Variables에 아래
-공개값만 설정합니다.
-
 ```bash
 VITE_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
-VITE_PREDICTION_MARKET_ADDRESS=0xYourSepoliaPredictionMarketAddress
-VITE_CHAIN_ID=11155111
-VITE_SEPOLIA_RPC_URL=https://rpc.sepolia.org
+VITE_POLY_PREDICT_ADDRESS=0xYourPolyPredictAddress
+VITE_USDC_ADDRESS=0xYourMockUsdcAddress
+VITE_CHAIN_ID=80002
+VITE_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
 ```
 
-- `VITE_WALLETCONNECT_PROJECT_ID`: RainbowKit/WalletConnect용 공개 Project ID
-- `VITE_PREDICTION_MARKET_ADDRESS`: Sepolia에 배포된 `PredictionMarket` 주소
-- `VITE_CHAIN_ID`: 반드시 Sepolia `11155111`
-- `VITE_SEPOLIA_RPC_URL`: 브라우저 read 요청에 사용할 공개 Sepolia RPC
+`PRIVATE_KEY`는 절대 `VITE_` 접두사를 붙이지 마세요.
 
-`PRIVATE_KEY`는 절대 `VITE_`로 만들지 말고, Vercel 프론트 환경변수에도 넣지 않습니다.
+## Contract Deploy
 
-## Contract Deploy Env
-
-컨트랙트 배포는 로컬 터미널에서만 아래 비공개 값을 사용합니다.
+`.env`에 배포용 비공개 값 설정:
 
 ```bash
-SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_KEY
-PRIVATE_KEY=0xYourSepoliaDeploymentPrivateKey
+AMOY_RPC_URL=https://rpc-amoy.polygon.technology
+PRIVATE_KEY=0xYourDeploymentPrivateKey
 ```
 
-배포 계정에는 Sepolia ETH가 필요합니다.
-
-## Commands
+배포 계정에는 Amoy **POL**이 필요합니다. ([Polygon faucet](https://faucet.polygon.technology))
 
 ```bash
 npm install
 npm run compile
-npm run deploy:sepolia
-npm run build
+npm run deploy:amoy
 ```
 
-`npm run deploy:sepolia`가 완료되면 출력되는 값을 프론트/Vercel 환경변수에 반영합니다.
+배포가 끝나면 `.env`에 `VITE_POLY_PREDICT_ADDRESS`, `VITE_USDC_ADDRESS`가 자동 기록됩니다.
+
+로컬 Hardhat 노드:
 
 ```bash
-VITE_PREDICTION_MARKET_ADDRESS=0x...
-VITE_CHAIN_ID=11155111
+npx hardhat node
+npm run deploy:local
 ```
 
-## Vercel Deploy
-
-Vercel에는 공개 가능한 `VITE_` 값만 등록합니다.
+## Commands
 
 ```bash
-VITE_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
-VITE_PREDICTION_MARKET_ADDRESS=0xYourSepoliaPredictionMarketAddress
-VITE_CHAIN_ID=11155111
-VITE_SEPOLIA_RPC_URL=https://rpc.sepolia.org
+npm run dev          # 프론트 개발 서버
+npm run build        # 타입체크 + Vite 빌드
+npm test             # PolyPredict 단위 테스트
+npm run compile      # Solidity 컴파일
 ```
 
-빌드 명령과 출력 디렉터리는 `vercel.json`에서 고정합니다.
+## CTF 참여 흐름
 
-```bash
-npm run build
-```
-
-SPA 라우팅을 위해 모든 경로는 `/index.html`로 rewrite됩니다.
+1. MockUSDC `mint` 또는 배포 시 지급된 USDC 보유
+2. `approve(PolyPredict, amount)`
+3. `mintShares(marketId, amount)` → YES·NO 토큰 동시 발행
+4. 관리자 `resolveMarket(marketId, YES|NO)`
+5. 승리 토큰 보유자 `claimWinnings(marketId)` → USDC 1:1 수령
 
 ## Network UX
 
-지갑이 Sepolia가 아닌 체인에 연결되어 있으면 상단 경고 배너가 표시되고, 사용자는
-버튼으로 Sepolia 전환을 요청할 수 있습니다.
+지갑이 Polygon Amoy가 아니면 상단 배너에서 네트워크 전환을 안내합니다.

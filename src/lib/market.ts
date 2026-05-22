@@ -1,16 +1,65 @@
-import { formatEther } from 'viem';
+import { formatUnits } from 'viem';
 
-export type MarketTuple = readonly [
+export const USDC_DECIMALS = 6;
+
+export type PolyPredictMarketTuple = readonly [
   string,
   string,
   string,
   string,
   string,
   bigint,
-  bigint,
-  boolean,
   number,
+  number,
+  bigint,
 ];
+
+export type PolyPredictMarketRaw = {
+  question: string;
+  description: string;
+  category: string;
+  outcomeYes: string;
+  outcomeNo: string;
+  deadline: bigint;
+  state: number;
+  outcome: number;
+  totalCollateral: bigint;
+};
+
+/** @deprecated Use PolyPredictMarketTuple */
+export type MarketTuple = PolyPredictMarketTuple;
+
+export function normalizeMarketResult(
+  result: PolyPredictMarketTuple | PolyPredictMarketRaw,
+): PolyPredictMarketRaw {
+  if (Array.isArray(result)) {
+    return {
+      question: result[0],
+      description: result[1],
+      category: result[2],
+      outcomeYes: result[3],
+      outcomeNo: result[4],
+      deadline: result[5],
+      state: Number(result[6]),
+      outcome: Number(result[7]),
+      totalCollateral: result[8],
+    };
+  }
+
+  const raw = result as PolyPredictMarketRaw;
+
+  return {
+    question: raw.question,
+    description: raw.description,
+    category: raw.category,
+    outcomeYes: raw.outcomeYes,
+    outcomeNo: raw.outcomeNo,
+    deadline: raw.deadline,
+    state: Number(raw.state),
+    outcome: Number(raw.outcome),
+    totalCollateral: raw.totalCollateral,
+  };
+}
 
 export type OutcomeId = 0 | 1;
 
@@ -26,21 +75,31 @@ export type Market = {
   poolB: bigint;
   resolved: boolean;
   winningOutcome: OutcomeId;
+  deadline: bigint;
 };
 
-export function toMarket(id: bigint, result: MarketTuple): Market {
+export function toMarket(
+  id: bigint,
+  result: PolyPredictMarketTuple | PolyPredictMarketRaw,
+): Market {
+  const raw = normalizeMarketResult(result);
+  const totalCollateral = raw.totalCollateral;
+  const resolved = raw.state === 2;
+  const contractOutcome = raw.outcome;
+
   return {
     id,
     numericId: Number(id),
-    title: result[0],
-    description: result[1],
-    category: result[2],
-    outcomeA: result[3],
-    outcomeB: result[4],
-    poolA: result[5],
-    poolB: result[6],
-    resolved: result[7],
-    winningOutcome: Number(result[8]) === 1 ? 1 : 0,
+    title: raw.question,
+    description: raw.description,
+    category: raw.category,
+    outcomeA: raw.outcomeYes,
+    outcomeB: raw.outcomeNo,
+    poolA: totalCollateral,
+    poolB: totalCollateral,
+    resolved,
+    winningOutcome: contractOutcome === 2 ? 1 : 0,
+    deadline: raw.deadline,
   };
 }
 
@@ -76,9 +135,22 @@ export function getWinningOutcomeName(market: Market) {
   return getOutcomeName(market, market.winningOutcome);
 }
 
-export function formatEth(value: bigint) {
-  const [whole, fraction = ''] = formatEther(value).split('.');
+export function formatUsdc(value: bigint | undefined) {
+  if (value === undefined) {
+    return '0 USDC';
+  }
+
+  const [whole, fraction = ''] = formatUnits(value, USDC_DECIMALS).split('.');
   const shortFraction = fraction.slice(0, 4).replace(/0+$/, '');
 
-  return `${shortFraction ? `${whole}.${shortFraction}` : whole} ETH`;
+  return `${shortFraction ? `${whole}.${shortFraction}` : whole} USDC`;
+}
+
+/** @deprecated Use formatUsdc */
+export function formatEth(value: bigint) {
+  return formatUsdc(value);
+}
+
+export function uiOutcomeToContractOutcome(outcome: OutcomeId): 1 | 2 {
+  return outcome === 0 ? 1 : 2;
 }

@@ -17,24 +17,21 @@ export function ContractConfigError() {
                 컨트랙트 연결 오류
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                배포된 컨트랙트 주소가 설정되지 않았거나 올바르지 않습니다. 잠시 후 다시
-                시도해주세요.
+                PolyPredict 또는 MockUSDC 주소가 설정되지 않았습니다.
               </p>
             </div>
           </div>
         </div>
         <div className="p-6">
           <AlertMessage tone="warning">
-            서비스 관리자가 올바른 네트워크와 컨트랙트 주소를 설정하면 정상적으로 이용할 수
-            있습니다.
+            배포 후 출력된 환경 변수를 <code>.env</code>에 반영해주세요.
           </AlertMessage>
           <details className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-600">
             <summary className="cursor-pointer font-black text-slate-800">개발자용 세부 정보</summary>
             <p className="mt-3">
-              <code>VITE_PREDICTION_MARKET_ADDRESS</code>에 배포된 PredictionMarket
-              컨트랙트 주소를 설정하고, <code>VITE_CHAIN_ID</code>가 {appChainName}
-              ({appChainId})와 일치하는지 확인해주세요. 현재 설정값은 {configuredChainId}
-              입니다.
+              <code>VITE_POLY_PREDICT_ADDRESS</code>, <code>VITE_USDC_ADDRESS</code>를 설정하고{' '}
+              <code>VITE_CHAIN_ID</code>가 {appChainName}({appChainId})와 일치하는지 확인하세요.
+              현재 설정값은 {configuredChainId}입니다.
             </p>
           </details>
         </div>

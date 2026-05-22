@@ -6,7 +6,7 @@ export function Footer() {
           <p className="font-black text-slate-900">Polymarket Lite</p>
           <p className="mt-1">블록체인 프로젝트용 테스트넷 dApp</p>
         </div>
-        <p className="font-semibold">현재 Sepolia 테스트넷 기준으로 동작합니다.</p>
+        <p className="font-semibold">현재 Polygon Amoy 테스트넷 · USDC 담보 CTF 방식으로 동작합니다.</p>
       </div>
     </footer>
   );

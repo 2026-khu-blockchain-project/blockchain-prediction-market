@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { CheckCircle2, Gift, Loader2, Trophy, Wallet } from 'lucide-react';
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import {
-  predictionMarketAbi,
-  predictionMarketAddress,
-} from '../contracts/predictionMarket';
-import { formatEth, type OutcomeId } from '../lib/market';
+import { polyPredictAbi, polyPredictAddress } from '../contracts/polyPredict';
+import { formatUsdc, type OutcomeId } from '../lib/market';
 import { AlertMessage, buttonStyles, cn, InfoRow, StatusBadge, SurfaceCard } from './ui';
 
 type ResultPanelProps = {
@@ -25,44 +22,37 @@ export function ResultPanel({
   const { data: hash, error, isPending, writeContract } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  const userWinningBetQuery = useReadContract({
-    address: predictionMarketAddress,
-    abi: predictionMarketAbi,
-    functionName: 'getUserBet',
-    args: address ? [marketId, address, winningOutcome] : undefined,
-    query: { enabled: isConnected && Boolean(address) && Boolean(predictionMarketAddress) },
-  });
-
-  const claimedQuery = useReadContract({
-    address: predictionMarketAddress,
-    abi: predictionMarketAbi,
-    functionName: 'claimed',
+  const shareBalancesQuery = useReadContract({
+    address: polyPredictAddress,
+    abi: polyPredictAbi,
+    functionName: 'getShareBalances',
     args: address ? [marketId, address] : undefined,
-    query: { enabled: isConnected && Boolean(address) && Boolean(predictionMarketAddress) },
+    query: { enabled: isConnected && Boolean(address) && Boolean(polyPredictAddress) },
   });
 
   const isBusy = isPending || isConfirming;
-  const userWinningBet = userWinningBetQuery.data ?? 0n;
-  const hasClaimed = claimedQuery.data ?? false;
-  const canClaim = isConnected && userWinningBet > 0n && !hasClaimed && !isBusy;
-  const claimMessage = getClaimMessage({ isConnected, hasClaimed, userWinningBet });
+  const balances = shareBalancesQuery.data as readonly [bigint, bigint] | undefined;
+  const yesBalance = balances?.[0] ?? 0n;
+  const noBalance = balances?.[1] ?? 0n;
+  const userWinningBet = winningOutcome === 0 ? yesBalance : noBalance;
+  const canClaim = isConnected && userWinningBet > 0n && !isBusy;
+  const claimMessage = getClaimMessage({ isConnected, hasClaimed: userWinningBet === 0n, userWinningBet });
 
   useEffect(() => {
     if (isSuccess) {
-      void userWinningBetQuery.refetch();
-      void claimedQuery.refetch();
+      void shareBalancesQuery.refetch();
       onTransactionSettled();
     }
   }, [isSuccess]);
 
   function handleClaim() {
-    if (!canClaim || !predictionMarketAddress) {
+    if (!canClaim || !polyPredictAddress) {
       return;
     }
 
     writeContract({
-      address: predictionMarketAddress,
-      abi: predictionMarketAbi,
+      address: polyPredictAddress,
+      abi: polyPredictAbi,
       functionName: 'claimWinnings',
       args: [marketId],
     });
@@ -81,7 +71,7 @@ export function ResultPanel({
             </div>
             <h2 className="mt-4 text-2xl font-black text-slate-950">보상 청구</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              승리 결과에 베팅한 지갑은 스마트 컨트랙트에서 보상을 청구할 수 있습니다.
+              승리한 YES/NO 토큰을 USDC로 교환할 수 있습니다.
             </p>
           </div>
         </div>
@@ -95,8 +85,11 @@ export function ResultPanel({
 
         {isConnected ? (
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <InfoRow label="내 승리 베팅" value={formatEth(userWinningBet)} />
-            <InfoRow label="청구 상태" value={hasClaimed ? '청구 완료' : '확인됨'} />
+            <InfoRow label="내 승리 포지션" value={formatUsdc(userWinningBet)} />
+            <InfoRow
+              label="청구 상태"
+              value={userWinningBet === 0n ? '청구 완료 또는 없음' : '청구 가능'}
+            />
           </div>
         ) : (
           <AlertMessage tone="info">
@@ -110,7 +103,7 @@ export function ResultPanel({
         {isConnected && <AlertMessage tone={claimMessage.tone}>{claimMessage.text}</AlertMessage>}
         {error && (
           <AlertMessage tone="error">
-            보상 청구에 실패했습니다. 이미 청구했거나 청구 가능한 보상이 없을 수 있습니다.
+            보상 청구에 실패했습니다. 승리 토큰 보유 여부와 네트워크를 확인해주세요.
           </AlertMessage>
         )}
         {isSuccess && (
@@ -159,19 +152,19 @@ function getClaimMessage({
   if (hasClaimed) {
     return {
       tone: 'info',
-      text: '이미 이 시장의 보상을 청구했습니다.',
+      text: '청구할 승리 포지션이 없습니다.',
     };
   }
 
   if (userWinningBet > 0n) {
     return {
       tone: 'success',
-      text: '승리 결과에 베팅한 금액이 있어 보상 청구가 가능합니다.',
+      text: '승리 토큰이 있어 USDC 보상 청구가 가능합니다.',
     };
   }
 
   return {
     tone: 'warning',
-    text: '승리 결과에 베팅한 금액이 없어 보상을 청구할 수 없습니다.',
+    text: '승리 결과에 해당하는 토큰이 없어 보상을 청구할 수 없습니다.',
   };
 }

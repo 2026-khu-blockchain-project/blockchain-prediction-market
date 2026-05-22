@@ -5,6 +5,8 @@ import { cn } from './ui';
 
 const navItems = [
   { label: '시장', to: '/markets' },
+  { label: '연습', to: '/practice' },
+  { label: '풀 베팅', to: '/pool' },
   { label: '내 포지션', to: '/portfolio' },
   { label: '이용 방법', to: '/how-it-works' },
   { label: '관리자', to: '/admin' },

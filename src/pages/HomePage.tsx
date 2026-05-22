@@ -9,7 +9,7 @@ const features = [
   },
   {
     title: '후보 A/B 베팅',
-    description: '지갑을 연결하고 원하는 결과를 선택해 ETH로 시장에 참여합니다.',
+    description: '지갑을 연결하고 USDC로 YES/NO 조건부 토큰 포지션을 발행합니다.',
     icon: Coins,
   },
   {
@@ -65,7 +65,7 @@ export function HomePage() {
           </div>
           <div className="space-y-4 p-6">
             <PreviewStep index="01" title="시장 조회" description="marketCount(), getMarket()" />
-            <PreviewStep index="02" title="베팅 참여" description="후보 A/B 중 하나 선택" />
+            <PreviewStep index="02" title="포지션 발행" description="mintShares() · USDC 담보" />
             <PreviewStep index="03" title="결과 확정" description="관리자 계정으로 확정" />
             <PreviewStep index="04" title="보상 청구" description="승리 포지션 정산" />
           </div>
@@ -92,7 +92,7 @@ export function HomePage() {
       </div>
 
       <p className="mt-10 rounded-2xl border border-slate-200 bg-white/70 px-5 py-4 text-sm font-semibold text-slate-500">
-        이 서비스는 테스트넷 환경에서 동작합니다. 실제 자산이 아닌 테스트용 ETH를 사용해주세요.
+        Polygon Amoy 테스트넷에서 동작합니다. MockUSDC와 테스트 POL을 사용해주세요.
       </p>
     </PageShell>
   );

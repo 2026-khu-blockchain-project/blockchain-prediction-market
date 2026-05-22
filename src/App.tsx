@@ -7,6 +7,8 @@ import { HomePage } from './pages/HomePage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { MarketDetailPage } from './pages/MarketDetailPage';
 import { MarketsPage } from './pages/MarketsPage';
+import { PoolMarketPage } from './pages/PoolMarketPage';
+import { PracticePage } from './pages/PracticePage';
 import { PortfolioPage } from './pages/PortfolioPage';
 
 export default function App() {
@@ -22,6 +24,8 @@ export default function App() {
           <Route element={<PortfolioPage />} path="/portfolio" />
           <Route element={<AdminPage />} path="/admin" />
           <Route element={<HowItWorksPage />} path="/how-it-works" />
+          <Route element={<PracticePage />} path="/practice" />
+          <Route element={<PoolMarketPage />} path="/pool" />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </div>

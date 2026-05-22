@@ -4,7 +4,7 @@ import {
   appChainId,
   appChainName,
   configuredChainId,
-  isConfiguredForSepolia,
+  isConfiguredForAppChain,
 } from '../config/env';
 import { cn } from './ui';
 
@@ -27,7 +27,7 @@ export function NetworkWarning() {
 
   const hasWrongWalletNetwork = chainId !== appChainId;
 
-  if (!hasWrongWalletNetwork && isConfiguredForSepolia) {
+  if (!hasWrongWalletNetwork && isConfiguredForAppChain) {
     return null;
   }
 

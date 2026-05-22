@@ -24,7 +24,7 @@ import {
   predictionMarketAddress,
 } from '../contracts/predictionMarket';
 import {
-  formatEth,
+  formatUsdc,
   getMarketStatusLabel,
   getOutcomeName,
   getOutcomePool,
@@ -33,7 +33,7 @@ import {
   getWinningOutcomeName,
   toMarket,
   type Market,
-  type MarketTuple,
+  type PolyPredictMarketRaw,
   type OutcomeId,
 } from '../lib/market';
 
@@ -67,7 +67,7 @@ function MarketDetailContent({
       return undefined;
     }
 
-    return toMarket(parsedMarketId, marketQuery.data as MarketTuple);
+    return toMarket(parsedMarketId, marketQuery.data as PolyPredictMarketRaw);
   }, [marketQuery.data, parsedMarketId]);
 
   if (parsedMarketId === undefined || marketQuery.isError) {
@@ -163,7 +163,7 @@ function MarketDetailLayout({
                 <StatCard
                   icon={<Coins className="h-4 w-4" aria-hidden="true" />}
                   label="총 예치금"
-                  value={formatEth(totalPool)}
+                  value={formatUsdc(totalPool)}
                 />
                 <StatCard
                   icon={<Landmark className="h-4 w-4" aria-hidden="true" />}
@@ -220,7 +220,7 @@ function MarketDetailLayout({
                 key={outcome.id}
                 name={outcome.name}
                 percent={outcome.percent}
-                pool={formatEth(outcome.pool)}
+                pool={formatUsdc(outcome.pool)}
                 onSelect={() => setSelectedOutcome(outcome.id)}
               />
             ))}
