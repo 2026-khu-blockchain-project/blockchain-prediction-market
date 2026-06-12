@@ -24,6 +24,7 @@ import {
   mockOracleAddress,
   mockV3AggregatorAbi,
 } from '../contracts/mockV3Aggregator';
+import { soccerOracleAddress } from '../config/env';
 import {
   formatUsdc,
   getMarketStatusLabel,
@@ -74,6 +75,11 @@ export function AdminPanel({
   const [resolveSelection, setResolveSelection] = useState<Record<number, OutcomeId>>({});
   const [formError, setFormError] = useState('');
   const [oraclePriceInput, setOraclePriceInput] = useState('90000');
+  const [soccerGoalDiff, setSoccerGoalDiff] = useState('1');
+
+  const soccerOracleWrite = useWriteContract();
+  const soccerOracleReceipt = useWaitForTransactionReceipt({ hash: soccerOracleWrite.data });
+  const soccerOracleBusy = soccerOracleWrite.isPending || soccerOracleReceipt.isLoading;
 
   const ownerQuery = useReadContract({
     address: contractAddress,
@@ -156,6 +162,12 @@ export function AdminPanel({
   }, [oraclePriceReceipt.isSuccess]);
 
   useEffect(() => {
+    if (soccerOracleReceipt.isSuccess) {
+      refetchMarkets();
+    }
+  }, [soccerOracleReceipt.isSuccess]);
+
+  useEffect(() => {
     if (resolveOracleReceipt.isSuccess) {
       refetchMarkets();
     }
@@ -216,6 +228,17 @@ export function AdminPanel({
       abi: mockV3AggregatorAbi,
       functionName: 'updateAnswer',
       args: [price],
+    });
+  }
+
+  function handleUpdateSoccerOracle() {
+    if (!soccerOracleAddress) return;
+    const diff = BigInt(soccerGoalDiff);
+    soccerOracleWrite.writeContract({
+      address: soccerOracleAddress as `0x${string}`,
+      abi: mockV3AggregatorAbi,
+      functionName: 'updateAnswer',
+      args: [diff],
     });
   }
 
@@ -306,7 +329,7 @@ export function AdminPanel({
                 <RefreshCw className="h-5 w-5 animate-spin-slow" aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-slate-950">모의 오라클 시세 제어 (로컬 테스트용)</h2>
+                <h2 className="text-xl font-black text-slate-950">모의 BTC 오라클 시세 제어 (로컬 테스트용)</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-600">
                   로컬 Mock 오라클 가격 피드 주소(<span className="font-mono text-slate-500">{mockOracleAddress}</span>)의 비트코인 시세를 변경하여 정산을 테스트합니다.
                 </p>
@@ -335,6 +358,51 @@ export function AdminPanel({
           {oraclePriceReceipt.isSuccess && (
             <div className="px-6 pb-6">
               <AlertMessage tone="success">오라클 시세가 성공적으로 업데이트되었습니다!</AlertMessage>
+            </div>
+          )}
+        </SurfaceCard>
+      )}
+
+      {soccerOracleAddress && (
+        <SurfaceCard className="overflow-hidden border-emerald-200">
+          <div className="border-b border-slate-100 bg-emerald-50/50 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <RefreshCw className="h-5 w-5 animate-spin-slow" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">모의 축구 오라클 결과 제어 (로컬 테스트용 - 사례 B)</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  로컬 축구 오라클 피드 주소(<span className="font-mono text-slate-500">{soccerOracleAddress}</span>)의 대한민국 vs 멕시코 골득실차를 변경하여 정산을 테스트합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 flex flex-col md:flex-row items-end gap-4">
+            <label className="block w-full md:w-80">
+              <span className="text-sm font-bold text-slate-700">모의 골득실차 (대한민국 - 멕시코)</span>
+              <input
+                className={cn(fieldStyles, 'mt-2')}
+                value={soccerGoalDiff}
+                onChange={(e) => setSoccerGoalDiff(e.target.value)}
+              />
+              <span className="text-xs text-slate-500 mt-1 block">
+                * 0 초과 = 대한민국 승리 / 0 이하 = 멕시코 승/무
+              </span>
+            </label>
+            <button
+              className={cn(buttonStyles('primary'), 'bg-emerald-600 hover:bg-emerald-700 text-white w-full md:w-auto')}
+              disabled={soccerOracleBusy}
+              type="button"
+              onClick={handleUpdateSoccerOracle}
+            >
+              {soccerOracleBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+              골득실 업데이트
+            </button>
+          </div>
+          {soccerOracleReceipt.isSuccess && (
+            <div className="px-6 pb-6">
+              <AlertMessage tone="success">축구 오라클 결과가 성공적으로 업데이트되었습니다!</AlertMessage>
             </div>
           )}
         </SurfaceCard>

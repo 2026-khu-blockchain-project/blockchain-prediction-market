@@ -145,6 +145,21 @@ async function main() {
   await oracleTx.wait();
   console.log("  ✓ 2026년 비트코인 가격이 $100,000 이상을 유지할까? (오라클 연동)");
 
+  console.log("\n[오라클 시장 생성] PolyPredict 대한민국 vs 멕시코 축구 결과 예측시장...");
+  const soccerDeadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30일 후 마감
+  const soccerTx = await polyPredict.createOracleMarket(
+    "대한민국 vs 멕시코 축구 결과 예측 (오라클 연동)",
+    "경기 결과 골 득실차가 0보다 크면 대한민국 승리, 0 이하이면 멕시코 승/무로 자동 확정됩니다.",
+    "Sports",
+    "대한민국 승리",
+    "멕시코 승/무",
+    soccerDeadline,
+    soccerOracleAddress,
+    1n // 기준 득실차: 0 초과
+  );
+  await soccerTx.wait();
+  console.log("  ✓ 대한민국 vs 멕시코 축구 결과 예측 (오라클 연동)");
+
   console.log("\n[소유권 이전] 관리자(Owner) 권한을 사용자 지갑으로 이전 중...");
   const targetOwner = "0x2fcC7DC259373b6B9094f36833Cfa351b043a71e";
   const txOwner1 = await polyPredict.transferOwnership(targetOwner);
