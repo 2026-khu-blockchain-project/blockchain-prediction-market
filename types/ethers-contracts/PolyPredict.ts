@@ -6,14 +6,14 @@ import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, Typed
   
 export declare namespace PolyPredict {
       
-    export type MarketStruct = {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: BigNumberish, state: BigNumberish, outcome: BigNumberish, totalCollateral: BigNumberish}
+    export type MarketStruct = {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: BigNumberish, state: BigNumberish, outcome: BigNumberish, totalCollateral: BigNumberish, priceFeed: AddressLike, targetPrice: BigNumberish}
 
-    export type MarketStructOutput = [question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint] & {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint }
+    export type MarketStructOutput = [question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint, priceFeed: string, targetPrice: bigint] & {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint, priceFeed: string, targetPrice: bigint }
   
     }
 
   export interface PolyPredictInterface extends Interface {
-    getFunction(nameOrSignature: "balanceOf" | "balanceOfBatch" | "burnShares" | "claimWinnings" | "createMarket" | "getMarket" | "getShareBalances" | "getTokenIds" | "isApprovedForAll" | "marketCount" | "markets" | "mintShares" | "owner" | "renounceOwnership" | "resolveMarket" | "safeBatchTransferFrom" | "safeTransferFrom" | "setApprovalForAll" | "supportsInterface" | "transferOwnership" | "uri" | "usdc"): FunctionFragment;
+    getFunction(nameOrSignature: "balanceOf" | "balanceOfBatch" | "burnShares" | "claimWinnings" | "createMarket" | "createOracleMarket" | "getMarket" | "getShareBalances" | "getTokenIds" | "isApprovedForAll" | "marketCount" | "markets" | "mintShares" | "owner" | "renounceOwnership" | "resolveMarket" | "resolveMarketWithOracle" | "safeBatchTransferFrom" | "safeTransferFrom" | "setApprovalForAll" | "supportsInterface" | "transferOwnership" | "uri" | "usdc"): FunctionFragment;
 
     getEvent(nameOrSignatureOrTopic: "ApprovalForAll" | "MarketCreated" | "MarketResolved" | "OwnershipTransferred" | "SharesBurned" | "SharesMinted" | "TransferBatch" | "TransferSingle" | "URI" | "WinningsClaimed"): EventFragment;
 
@@ -22,6 +22,7 @@ encodeFunctionData(functionFragment: 'balanceOfBatch', values: [AddressLike[], B
 encodeFunctionData(functionFragment: 'burnShares', values: [BigNumberish, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'claimWinnings', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'createMarket', values: [string, string, string, string, string, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'createOracleMarket', values: [string, string, string, string, string, BigNumberish, AddressLike, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'getMarket', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'getShareBalances', values: [BigNumberish, AddressLike]): string;
 encodeFunctionData(functionFragment: 'getTokenIds', values: [BigNumberish]): string;
@@ -32,6 +33,7 @@ encodeFunctionData(functionFragment: 'mintShares', values: [BigNumberish, BigNum
 encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
 encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
 encodeFunctionData(functionFragment: 'resolveMarket', values: [BigNumberish, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'resolveMarketWithOracle', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'safeBatchTransferFrom', values: [AddressLike, AddressLike, BigNumberish[], BigNumberish[], BytesLike]): string;
 encodeFunctionData(functionFragment: 'safeTransferFrom', values: [AddressLike, AddressLike, BigNumberish, BigNumberish, BytesLike]): string;
 encodeFunctionData(functionFragment: 'setApprovalForAll', values: [AddressLike, boolean]): string;
@@ -45,6 +47,7 @@ decodeFunctionResult(functionFragment: 'balanceOfBatch', data: BytesLike): Resul
 decodeFunctionResult(functionFragment: 'burnShares', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'claimWinnings', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'createMarket', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'createOracleMarket', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'getMarket', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'getShareBalances', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'getTokenIds', data: BytesLike): Result;
@@ -55,6 +58,7 @@ decodeFunctionResult(functionFragment: 'mintShares', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'resolveMarket', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'resolveMarketWithOracle', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'safeBatchTransferFrom', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'safeTransferFrom', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'setApprovalForAll', data: BytesLike): Result;
@@ -259,6 +263,14 @@ decodeFunctionResult(functionFragment: 'usdc', data: BytesLike): Result;
     
 
     
+    createOracleMarket: TypedContractMethod<
+      [_question: string, _description: string, _category: string, _outcomeYes: string, _outcomeNo: string, _deadline: BigNumberish, _priceFeed: AddressLike, _targetPrice: BigNumberish, ],
+      [bigint],
+      'nonpayable'
+    >
+    
+
+    
     getMarket: TypedContractMethod<
       [_marketId: BigNumberish, ],
       [PolyPredict.MarketStructOutput],
@@ -301,7 +313,7 @@ decodeFunctionResult(functionFragment: 'usdc', data: BytesLike): Result;
     
     markets: TypedContractMethod<
       [arg0: BigNumberish, ],
-      [[string, string, string, string, string, bigint, bigint, bigint, bigint] & {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint }],
+      [[string, string, string, string, string, bigint, bigint, bigint, bigint, string, bigint] & {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint, priceFeed: string, targetPrice: bigint }],
       'view'
     >
     
@@ -333,6 +345,14 @@ decodeFunctionResult(functionFragment: 'usdc', data: BytesLike): Result;
     
     resolveMarket: TypedContractMethod<
       [_marketId: BigNumberish, _outcome: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
+    resolveMarketWithOracle: TypedContractMethod<
+      [_marketId: BigNumberish, ],
       [void],
       'nonpayable'
     >
@@ -422,6 +442,11 @@ getFunction(nameOrSignature: 'createMarket'): TypedContractMethod<
       [bigint],
       'nonpayable'
     >;
+getFunction(nameOrSignature: 'createOracleMarket'): TypedContractMethod<
+      [_question: string, _description: string, _category: string, _outcomeYes: string, _outcomeNo: string, _deadline: BigNumberish, _priceFeed: AddressLike, _targetPrice: BigNumberish, ],
+      [bigint],
+      'nonpayable'
+    >;
 getFunction(nameOrSignature: 'getMarket'): TypedContractMethod<
       [_marketId: BigNumberish, ],
       [PolyPredict.MarketStructOutput],
@@ -449,7 +474,7 @@ getFunction(nameOrSignature: 'marketCount'): TypedContractMethod<
     >;
 getFunction(nameOrSignature: 'markets'): TypedContractMethod<
       [arg0: BigNumberish, ],
-      [[string, string, string, string, string, bigint, bigint, bigint, bigint] & {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint }],
+      [[string, string, string, string, string, bigint, bigint, bigint, bigint, string, bigint] & {question: string, description: string, category: string, outcomeYes: string, outcomeNo: string, deadline: bigint, state: bigint, outcome: bigint, totalCollateral: bigint, priceFeed: string, targetPrice: bigint }],
       'view'
     >;
 getFunction(nameOrSignature: 'mintShares'): TypedContractMethod<
@@ -469,6 +494,11 @@ getFunction(nameOrSignature: 'renounceOwnership'): TypedContractMethod<
     >;
 getFunction(nameOrSignature: 'resolveMarket'): TypedContractMethod<
       [_marketId: BigNumberish, _outcome: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >;
+getFunction(nameOrSignature: 'resolveMarketWithOracle'): TypedContractMethod<
+      [_marketId: BigNumberish, ],
       [void],
       'nonpayable'
     >;

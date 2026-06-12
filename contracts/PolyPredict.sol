@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./AggregatorV3Interface.sol";
 
 /**
  * @title PolyPredict
@@ -33,6 +34,8 @@ contract PolyPredict is ERC1155, Ownable, ReentrancyGuard {
         MarketState state;
         Outcome outcome;
         uint256 totalCollateral;
+        address priceFeed;
+        int256 targetPrice;
     }
 
     IERC20 public immutable usdc;
@@ -86,7 +89,43 @@ contract PolyPredict is ERC1155, Ownable, ReentrancyGuard {
             deadline: _deadline,
             state: MarketState.OPEN,
             outcome: Outcome.NONE,
-            totalCollateral: 0
+            totalCollateral: 0,
+            priceFeed: address(0),
+            targetPrice: 0
+        });
+
+        emit MarketCreated(marketId, _question, _category, _deadline);
+    }
+
+    function createOracleMarket(
+        string calldata _question,
+        string calldata _description,
+        string calldata _category,
+        string calldata _outcomeYes,
+        string calldata _outcomeNo,
+        uint256 _deadline,
+        address _priceFeed,
+        int256 _targetPrice
+    ) external onlyOwner returns (uint256 marketId) {
+        require(_deadline > block.timestamp, "Deadline must be in the future");
+        require(bytes(_outcomeYes).length > 0, "Outcome YES label required");
+        require(bytes(_outcomeNo).length > 0, "Outcome NO label required");
+        require(_priceFeed != address(0), "Invalid price feed address");
+
+        marketId = marketCount++;
+
+        markets[marketId] = Market({
+            question: _question,
+            description: _description,
+            category: _category,
+            outcomeYes: _outcomeYes,
+            outcomeNo: _outcomeNo,
+            deadline: _deadline,
+            state: MarketState.OPEN,
+            outcome: Outcome.NONE,
+            totalCollateral: 0,
+            priceFeed: _priceFeed,
+            targetPrice: _targetPrice
         });
 
         emit MarketCreated(marketId, _question, _category, _deadline);
@@ -147,6 +186,25 @@ contract PolyPredict is ERC1155, Ownable, ReentrancyGuard {
         m.outcome = _outcome;
 
         emit MarketResolved(_marketId, _outcome);
+    }
+
+    function resolveMarketWithOracle(uint256 _marketId) external {
+        Market storage m = markets[_marketId];
+
+        require(m.state == MarketState.OPEN, "Market already resolved");
+        require(block.timestamp >= m.deadline, "Deadline not reached yet");
+        require(m.priceFeed != address(0), "Not an oracle market");
+
+        AggregatorV3Interface feed = AggregatorV3Interface(m.priceFeed);
+        (, int256 price, , , ) = feed.latestRoundData();
+        require(price > 0, "Invalid oracle price");
+
+        Outcome finalOutcome = price >= m.targetPrice ? Outcome.YES : Outcome.NO;
+
+        m.state = MarketState.RESOLVED;
+        m.outcome = finalOutcome;
+
+        emit MarketResolved(_marketId, finalOutcome);
     }
 
     function claimWinnings(uint256 _marketId) external nonReentrant {

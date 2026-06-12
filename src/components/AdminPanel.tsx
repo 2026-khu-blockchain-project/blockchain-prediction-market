@@ -21,6 +21,10 @@ import {
   predictionMarketAddress,
 } from '../contracts/predictionMarket';
 import {
+  mockOracleAddress,
+  mockV3AggregatorAbi,
+} from '../contracts/mockV3Aggregator';
+import {
   formatUsdc,
   getMarketStatusLabel,
   getTotalPool,
@@ -69,6 +73,7 @@ export function AdminPanel({
   const [form, setForm] = useState<MarketForm>(emptyForm);
   const [resolveSelection, setResolveSelection] = useState<Record<number, OutcomeId>>({});
   const [formError, setFormError] = useState('');
+  const [oraclePriceInput, setOraclePriceInput] = useState('90000');
 
   const ownerQuery = useReadContract({
     address: contractAddress,
@@ -104,11 +109,18 @@ export function AdminPanel({
 
   const createWrite = useWriteContract();
   const resolveWrite = useWriteContract();
+  const oraclePriceWrite = useWriteContract();
+  const resolveOracleWrite = useWriteContract();
+
   const createReceipt = useWaitForTransactionReceipt({ hash: createWrite.data });
   const resolveReceipt = useWaitForTransactionReceipt({ hash: resolveWrite.data });
+  const oraclePriceReceipt = useWaitForTransactionReceipt({ hash: oraclePriceWrite.data });
+  const resolveOracleReceipt = useWaitForTransactionReceipt({ hash: resolveOracleWrite.data });
 
   const createBusy = createWrite.isPending || createReceipt.isLoading;
   const resolveBusy = resolveWrite.isPending || resolveReceipt.isLoading;
+  const oraclePriceBusy = oraclePriceWrite.isPending || oraclePriceReceipt.isLoading;
+  const resolveOracleBusy = resolveOracleWrite.isPending || resolveOracleReceipt.isLoading;
   const owner = ownerQuery.data ? String(ownerQuery.data).toLowerCase() : undefined;
   const currentAddress = address?.toLowerCase();
   const isOwner = Boolean(owner && currentAddress && owner === currentAddress);
@@ -136,6 +148,18 @@ export function AdminPanel({
       refetchMarkets();
     }
   }, [resolveReceipt.isSuccess]);
+
+  useEffect(() => {
+    if (oraclePriceReceipt.isSuccess) {
+      refetchMarkets();
+    }
+  }, [oraclePriceReceipt.isSuccess]);
+
+  useEffect(() => {
+    if (resolveOracleReceipt.isSuccess) {
+      refetchMarkets();
+    }
+  }, [resolveOracleReceipt.isSuccess]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -181,6 +205,26 @@ export function AdminPanel({
       abi: predictionMarketAbi,
       functionName: 'resolveMarket',
       args: [market.id, uiOutcomeToContractOutcome(selectedOutcome)],
+    });
+  }
+
+  function handleUpdateOraclePrice() {
+    if (!mockOracleAddress) return;
+    const price = BigInt(Number(oraclePriceInput) * 10**8);
+    oraclePriceWrite.writeContract({
+      address: mockOracleAddress,
+      abi: mockV3AggregatorAbi,
+      functionName: 'updateAnswer',
+      args: [price],
+    });
+  }
+
+  function handleResolveMarketWithOracle(marketId: bigint) {
+    resolveOracleWrite.writeContract({
+      address: contractAddress,
+      abi: predictionMarketAbi,
+      functionName: 'resolveMarketWithOracle',
+      args: [marketId],
     });
   }
 
@@ -253,6 +297,48 @@ export function AdminPanel({
           </div>
         </div>
       </SurfaceCard>
+
+      {mockOracleAddress && (
+        <SurfaceCard className="overflow-hidden border-amber-200">
+          <div className="border-b border-slate-100 bg-amber-50/50 p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+                <RefreshCw className="h-5 w-5 animate-spin-slow" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-950">모의 오라클 시세 제어 (로컬 테스트용)</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  로컬 Mock 오라클 가격 피드 주소(<span className="font-mono text-slate-500">{mockOracleAddress}</span>)의 비트코인 시세를 변경하여 정산을 테스트합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-6 flex flex-col md:flex-row items-end gap-4">
+            <label className="block w-full md:w-80">
+              <span className="text-sm font-bold text-slate-700">모의 BTC 가격 ($)</span>
+              <input
+                className={cn(fieldStyles, 'mt-2')}
+                value={oraclePriceInput}
+                onChange={(e) => setOraclePriceInput(e.target.value)}
+              />
+            </label>
+            <button
+              className={cn(buttonStyles('primary'), 'bg-amber-600 hover:bg-amber-700 text-white w-full md:w-auto')}
+              disabled={oraclePriceBusy}
+              type="button"
+              onClick={handleUpdateOraclePrice}
+            >
+              {oraclePriceBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+              시세 업데이트 (decimals 8)
+            </button>
+          </div>
+          {oraclePriceReceipt.isSuccess && (
+            <div className="px-6 pb-6">
+              <AlertMessage tone="success">오라클 시세가 성공적으로 업데이트되었습니다!</AlertMessage>
+            </div>
+          )}
+        </SurfaceCard>
+      )}
 
       <SurfaceCard className="overflow-hidden">
         <div className="border-b border-slate-100 p-6">
@@ -409,6 +495,27 @@ export function AdminPanel({
                   {market.resolved ? (
                     <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">
                       승리 결과: {getWinningOutcomeName(market)}
+                    </div>
+                  ) : market.priceFeed && market.priceFeed !== '0x0000000000000000000000000000000000000000' ? (
+                    <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/20 p-4">
+                      <div className="text-xs font-semibold text-slate-600">
+                        <p>📢 체인링크 오라클 연동 마켓</p>
+                        <p className="mt-1">피드 주소: <span className="font-mono text-slate-500">{market.priceFeed.slice(0, 10)}...</span></p>
+                        <p>기준 시세: <span className="font-mono text-slate-800">${Number(market.targetPrice / 10n**8n).toLocaleString()}</span></p>
+                      </div>
+                      <button
+                        className={cn(buttonStyles('primary'), 'bg-emerald-600 hover:bg-emerald-700 text-white w-full')}
+                        disabled={resolveOracleBusy}
+                        type="button"
+                        onClick={() => handleResolveMarketWithOracle(market.id)}
+                      >
+                        {resolveOracleBusy ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {resolveOracleBusy ? '오라클 데이터 수집 중...' : '오라클 기반 자동 확정'}
+                      </button>
                     </div>
                   ) : (
                     <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">

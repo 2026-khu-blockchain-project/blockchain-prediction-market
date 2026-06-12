@@ -43,6 +43,7 @@ export const poolMarketAddress = (
 
 export const isPolyPredictConfigured = Boolean(polyPredictAddress && usdcAddress);
 export const isPoolMarketConfigured = Boolean(poolMarketAddress && usdcAddress);
+export const mockOracleAddress = import.meta.env.VITE_MOCK_ORACLE_ADDRESS?.trim();
 
 const demoOnlyRaw = import.meta.env.VITE_DEMO_ONLY?.trim().toLowerCase();
 export const isDemoOnly =

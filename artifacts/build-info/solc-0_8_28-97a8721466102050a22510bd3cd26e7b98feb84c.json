@@ -1,0 +1,47 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-97a8721466102050a22510bd3cd26e7b98feb84c",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/MockV3Aggregator.sol": "project/contracts/MockV3Aggregator.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": [],
+      "viaIR": true
+    },
+    "sources": {
+      "project/contracts/MockV3Aggregator.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ncontract MockV3Aggregator {\n    uint8 public decimals = 8;\n    string public description = \"Mock BTC/USD\";\n    uint256 public version = 1;\n\n    int256 private _price;\n    uint256 private _updatedAt;\n\n    constructor(int256 initialPrice) {\n        _price = initialPrice;\n        _updatedAt = block.timestamp;\n    }\n\n    function updateAnswer(int256 price) external {\n        _price = price;\n        _updatedAt = block.timestamp;\n    }\n\n    function latestRoundData()\n        external\n        view\n        returns (\n            uint80 roundId,\n            int256 answer,\n            uint256 startedAt,\n            uint256 updatedAt,\n            uint80 answeredInRound\n        )\n    {\n        return (1, _price, _updatedAt, _updatedAt, 1);\n    }\n}\n"
+      }
+    }
+  }
+}

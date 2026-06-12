@@ -10,19 +10,27 @@ import * as Contracts from "./index.js";
 
 declare module "@nomicfoundation/hardhat-ethers/types" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
-  getContractFactory(name: 'MockUSDC', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockUSDC__factory>
+  getContractFactory(name: 'AggregatorV3Interface', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.AggregatorV3Interface__factory>
+getContractFactory(name: 'MockUSDC', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockUSDC__factory>
+getContractFactory(name: 'MockV3Aggregator', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.MockV3Aggregator__factory>
 getContractFactory(name: 'PolyPredict', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.PolyPredict__factory>
 getContractFactory(name: 'PoolBinaryMarket', signerOrOptions?: ethers.Signer | FactoryOptions): Promise<Contracts.PoolBinaryMarket__factory>
 
-  getContractAt(name: 'MockUSDC', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockUSDC>
+  getContractAt(name: 'AggregatorV3Interface', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.AggregatorV3Interface>
+getContractAt(name: 'MockUSDC', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockUSDC>
+getContractAt(name: 'MockV3Aggregator', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.MockV3Aggregator>
 getContractAt(name: 'PolyPredict', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.PolyPredict>
 getContractAt(name: 'PoolBinaryMarket', address: string | ethers.Addressable, signer?: ethers.Signer): Promise<Contracts.PoolBinaryMarket>
 
-  deployContract(name: 'MockUSDC', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockUSDC>
+  deployContract(name: 'AggregatorV3Interface', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AggregatorV3Interface>
+deployContract(name: 'MockUSDC', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockUSDC>
+deployContract(name: 'MockV3Aggregator', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockV3Aggregator>
 deployContract(name: 'PolyPredict', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.PolyPredict>
 deployContract(name: 'PoolBinaryMarket', signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.PoolBinaryMarket>
 
-  deployContract(name: 'MockUSDC', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockUSDC>
+  deployContract(name: 'AggregatorV3Interface', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.AggregatorV3Interface>
+deployContract(name: 'MockUSDC', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockUSDC>
+deployContract(name: 'MockV3Aggregator', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.MockV3Aggregator>
 deployContract(name: 'PolyPredict', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.PolyPredict>
 deployContract(name: 'PoolBinaryMarket', args: any[], signerOrOptions?: ethers.Signer | DeployContractOptions): Promise<Contracts.PoolBinaryMarket>
 

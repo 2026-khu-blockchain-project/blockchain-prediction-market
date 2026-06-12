@@ -69,6 +69,7 @@ async function main() {
   }
 
   let usdcAddress: string;
+  let btcOracleAddress: string;
 
   if (networkName === "localhost" || networkName === "amoy" || networkName === "hardhat") {
     console.log("\n[1/3] MockUSDC 배포 중...");
@@ -82,9 +83,16 @@ async function main() {
       await mintTx.wait();
       console.log("테스트 USDC 10,000 발행 완료");
     }
+
+    console.log("\n[오라클] MockV3Aggregator 배포 중...");
+    const mockOracle = await ethers.deployContract("MockV3Aggregator", [90000n * 10n**8n]); // 초기 가격 $90,000
+    await mockOracle.waitForDeployment();
+    btcOracleAddress = await mockOracle.getAddress();
+    console.log("MockV3Aggregator:", btcOracleAddress);
   } else {
     usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
     console.log("Polygon USDC 사용:", usdcAddress);
+    btcOracleAddress = "0xF0d50568e3A7e8259E16663972b11910F89E47Aa"; // Amoy BTC/USD Price Feed
   }
 
   console.log("\n[2/3] PolyPredict 배포 중...");
@@ -114,6 +122,21 @@ async function main() {
     console.log(`  ✓ ${market.question}`);
   }
 
+  console.log("\n[오라클 시장 생성] PolyPredict 오라클 예측시장...");
+  const oracleDeadline = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30일 후 마감
+  const oracleTx = await polyPredict.createOracleMarket(
+    "2026년 비트코인 가격이 $100,000 이상을 유지할까? (오라클 연동)",
+    "마감 시각 기준 Chainlink BTC/USD 가격 피드를 활용해 결과를 자동 확정합니다. (기준가격: $100,000)",
+    "Crypto",
+    "$100K 이상",
+    "$100K 미만",
+    oracleDeadline,
+    btcOracleAddress,
+    100000n * 10n**8n // $100,000 (8 decimals)
+  );
+  await oracleTx.wait();
+  console.log("  ✓ 2026년 비트코인 가격이 $100,000 이상을 유지할까? (오라클 연동)");
+
   const marketCount = await polyPredict.marketCount();
   console.log(`총 ${marketCount}개 시장 생성 완료`);
 
@@ -132,6 +155,7 @@ async function main() {
     `VITE_POLY_PREDICT_ADDRESS=${polyPredictAddress}\n` +
     `VITE_USDC_ADDRESS=${usdcAddress}\n` +
     `VITE_POOL_MARKET_ADDRESS=${poolMarketAddress}\n` +
+    `VITE_MOCK_ORACLE_ADDRESS=${btcOracleAddress}\n` +
     `VITE_CHAIN_ID=${chainId}\n` +
     (networkName === "amoy" ? `VITE_AMOY_RPC_URL=${amoyRpc}\n` : "") +
     `VITE_WALLETCONNECT_PROJECT_ID=demo\n` +

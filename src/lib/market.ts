@@ -12,6 +12,8 @@ export type PolyPredictMarketTuple = readonly [
   number,
   number,
   bigint,
+  string,
+  bigint,
 ];
 
 export type PolyPredictMarketRaw = {
@@ -24,6 +26,8 @@ export type PolyPredictMarketRaw = {
   state: number;
   outcome: number;
   totalCollateral: bigint;
+  priceFeed: string;
+  targetPrice: bigint;
 };
 
 /** @deprecated Use PolyPredictMarketTuple */
@@ -43,6 +47,8 @@ export function normalizeMarketResult(
       state: Number(result[6]),
       outcome: Number(result[7]),
       totalCollateral: result[8],
+      priceFeed: result[9],
+      targetPrice: result[10],
     };
   }
 
@@ -58,6 +64,8 @@ export function normalizeMarketResult(
     state: Number(raw.state),
     outcome: Number(raw.outcome),
     totalCollateral: raw.totalCollateral,
+    priceFeed: raw.priceFeed,
+    targetPrice: raw.targetPrice,
   };
 }
 
@@ -76,6 +84,8 @@ export type Market = {
   resolved: boolean;
   winningOutcome: OutcomeId;
   deadline: bigint;
+  priceFeed: string;
+  targetPrice: bigint;
 };
 
 export function toMarket(
@@ -100,6 +110,8 @@ export function toMarket(
     resolved,
     winningOutcome: contractOutcome === 2 ? 1 : 0,
     deadline: raw.deadline,
+    priceFeed: raw.priceFeed,
+    targetPrice: raw.targetPrice,
   };
 }
 
