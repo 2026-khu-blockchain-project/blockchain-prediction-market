@@ -1,5 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { waitForTransactionReceipt } from '@wagmi/core';
 import { Loader2, Waves } from 'lucide-react';
 import { parseUnits } from 'viem';
@@ -48,6 +57,143 @@ function PoolBar({ yes, no }: { yes: bigint; no: bigint }) {
       <div className="mt-2 flex justify-between text-xs font-bold text-slate-600">
         <span>YES {yesPct.toFixed(1)}%</span>
         <span>NO {noPct.toFixed(1)}%</span>
+      </div>
+    </div>
+  );
+}
+
+interface ChartDataPoint {
+  time: string;
+  yes: number;
+  no: number;
+}
+
+function PoolChart({ currentPrice }: { currentPrice: number }) {
+  const yesVal = Number(currentPrice.toFixed(1));
+  const noVal = Number((100 - currentPrice).toFixed(1));
+
+  // 초기 과거 가상 거래 데이터
+  const [history, setHistory] = useState<ChartDataPoint[]>([
+    { time: '22:10', yes: 48, no: 52 },
+    { time: '22:15', yes: 52, no: 48 },
+    { time: '22:20', yes: 50, no: 50 },
+    { time: '22:25', yes: 47, no: 53 },
+    { time: '22:30', yes: 51, no: 49 },
+  ]);
+
+  const prevPriceRef = useRef<number>(yesVal);
+  const isFirstRender = useRef<boolean>(true);
+
+  useEffect(() => {
+    // 1. 첫 로딩 시점에는 기존 과거 데이터 뒤에 최초 온체인 가격 데이터 지점(실시간 현재 시각 포맷)을 이어붙임
+    if (isFirstRender.current) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+
+      setHistory((prev) => [
+        ...prev,
+        { time: timeStr, yes: yesVal, no: noVal }
+      ]);
+      prevPriceRef.current = yesVal;
+      isFirstRender.current = false;
+      return;
+    }
+
+    // 2. 이후 사용자가 베팅을 날려서 실시간으로 온체인 배당 가격이 바뀌었을 때만 새로운 타임스탬프로 점을 덧붙임
+    if (prevPriceRef.current !== yesVal) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+
+      setHistory((prev) => {
+        // 너무 많은 데이터가 쌓이지 않도록 최대 15개로 제한
+        const base = prev.length >= 15 ? prev.slice(1) : prev;
+        return [
+          ...base,
+          {
+            time: timeStr,
+            yes: yesVal,
+            no: noVal,
+          },
+        ];
+      });
+      prevPriceRef.current = yesVal;
+    }
+  }, [yesVal, noVal]);
+
+  return (
+    <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">실시간 가격 추이 (센트 ¢)</span>
+        <div className="flex gap-4 text-xs font-bold">
+          <span className="flex items-center gap-1 text-emerald-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" /> YES
+          </span>
+          <span className="flex items-center gap-1 text-blue-400">
+            <span className="h-2 w-2 rounded-full bg-blue-500" /> NO
+          </span>
+        </div>
+      </div>
+      
+      <div className="flex flex-col md:flex-row gap-6 items-center">
+        {/* 차트 영역 */}
+        <div className="h-[220px] w-full md:w-3/4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={history} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} />
+              <YAxis domain={[0, 100]} stroke="#475569" fontSize={10} tickLine={false} axisLine={false} orientation="right" unit="%" />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+                labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
+                formatter={(value, name) => [`${value}%`, name === 'yes' ? 'YES 가격' : 'NO 가격']}
+              />
+              <Line
+                type="monotone"
+                dataKey="yes"
+                stroke="#10b981"
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="no"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={false}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 우측 실시간 수치판 영역 */}
+        <div className="flex w-full md:w-1/4 flex-row md:flex-col justify-around md:justify-center md:gap-6 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6">
+          <div className="text-center md:text-left">
+            <span className="text-xs font-bold text-slate-400 block mb-1">YES 가격</span>
+            <div className="flex items-baseline justify-center md:justify-start gap-1">
+              <span className="text-3xl font-black text-emerald-400">{yesVal}%</span>
+              <span className="text-xs font-bold text-slate-500">({yesVal}¢)</span>
+            </div>
+          </div>
+          <div className="text-center md:text-left mt-0 md:mt-4">
+            <span className="text-xs font-bold text-slate-400 block mb-1">NO 가격</span>
+            <div className="flex items-baseline justify-center md:justify-start gap-1">
+              <span className="text-3xl font-black text-blue-400">{noVal}%</span>
+              <span className="text-xs font-bold text-slate-500">({noVal}¢)</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -119,6 +265,7 @@ function PoolDemoPanel() {
         </div>
         <h2 className="mt-4 text-2xl font-black text-slate-950">{POOL_QUESTION}</h2>
         <PoolBar yes={demo.totalYes} no={demo.totalNo} />
+        <PoolChart currentPrice={yesPct} />
         <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
           <Stat label="Pot YES / NO" value={`${demo.formatUsdc(demo.totalYes)} / ${demo.formatUsdc(demo.totalNo)}`} />
           <Stat label="내재 확률 (YES)" value={`${yesPct.toFixed(1)}%`} />
@@ -221,8 +368,8 @@ function PoolDemoPanel() {
 function PoolChainPanel() {
   const { address, isConnected } = useAccount();
   const config = useConfig();
-  const [betAmt, setBetAmt] = useState('50');
-  const [approveAmt, setApproveAmt] = useState('500');
+  const [betAmt, setBetAmt] = useState('10');
+  const [approveAmt, setApproveAmt] = useState('10');
   const [side, setSide] = useState<'yes' | 'no'>('yes');
   const { writeContractAsync, isPending, error } = useWriteContract();
 
@@ -365,6 +512,7 @@ function PoolChainPanel() {
         </div>
         <h2 className="mt-4 text-2xl font-black text-slate-950">{POOL_QUESTION}</h2>
         <PoolBar yes={ty} no={tn} />
+        <PoolChart currentPrice={yesPct} />
         <dl className="mt-6 grid gap-3 sm:grid-cols-2 text-sm">
           <Stat label="Pot YES / NO" value={`${formatUsdc(ty)} / ${formatUsdc(tn)}`} />
           <Stat label="내재 확률 YES" value={`${yesPct.toFixed(1)}%`} />

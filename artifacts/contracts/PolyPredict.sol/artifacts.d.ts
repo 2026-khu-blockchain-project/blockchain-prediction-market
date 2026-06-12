@@ -15,7 +15,7 @@ export interface PolyPredict$Type {
   readonly deployedLinkReferences: {};
   readonly immutableReferences: {"7819":[{"length":32,"start":451},{"length":32,"start":1943},{"length":32,"start":3590},{"length":32,"start":5353}]};
   readonly inputSourceName: "project/contracts/PolyPredict.sol";
-  readonly buildInfoId: "solc-0_8_28-fbc251a4881d71c235677b2857eecf349bef8d32";
+  readonly buildInfoId: "solc-0_8_28-5b5e68aba6b9b86ca0dac6ff06eece3a2fd89e86";
 };
 
 import "hardhat/types/artifacts";

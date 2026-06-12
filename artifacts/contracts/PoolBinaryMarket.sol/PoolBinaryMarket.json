@@ -407,7 +407,7 @@
   "linkReferences": {},
   "deployedLinkReferences": {},
   "immutableReferences": {
-    "505": [
+    "8493": [
       {
         "length": 32,
         "start": 447
@@ -423,5 +423,5 @@
     ]
   },
   "inputSourceName": "project/contracts/PoolBinaryMarket.sol",
-  "buildInfoId": "solc-0_8_28-095342dc3a51879f9c5206a5f0276c6828dfdee0"
+  "buildInfoId": "solc-0_8_28-5b5e68aba6b9b86ca0dac6ff06eece3a2fd89e86"
 }
