@@ -6,7 +6,7 @@ import type { TypedContractEvent, TypedDeferredTopicFilter, TypedEventLog, Typed
   
 
   export interface PoolBinaryMarketInterface extends Interface {
-    getFunction(nameOrSignature: "DECIMALS" | "MAX_PARTICIPANTS" | "MAX_STAKE_PER_USER" | "claim" | "impliedYesBps" | "noOf" | "noPoolMultiplierE4" | "outcome" | "owner" | "participantAt" | "participantCount" | "placeBet" | "renounceOwnership" | "resolve" | "resolved" | "totalNo" | "totalYes" | "transferOwnership" | "usdc" | "yesOf" | "yesPoolMultiplierE4"): FunctionFragment;
+    getFunction(nameOrSignature: "DECIMALS" | "MAX_PARTICIPANTS" | "MAX_STAKE_PER_USER" | "claim" | "impliedYesBps" | "noOf" | "noPoolMultiplierE4" | "outcome" | "owner" | "participantAt" | "participantCount" | "placeBet" | "priceFeed" | "renounceOwnership" | "resolve" | "resolveWithOracle" | "resolved" | "totalNo" | "totalYes" | "transferOwnership" | "usdc" | "yesOf" | "yesPoolMultiplierE4"): FunctionFragment;
 
     getEvent(nameOrSignatureOrTopic: "BetPlaced" | "Claimed" | "MarketResolved" | "OwnershipTransferred"): EventFragment;
 
@@ -22,8 +22,10 @@ encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
 encodeFunctionData(functionFragment: 'participantAt', values: [BigNumberish]): string;
 encodeFunctionData(functionFragment: 'participantCount', values?: undefined): string;
 encodeFunctionData(functionFragment: 'placeBet', values: [boolean, BigNumberish]): string;
+encodeFunctionData(functionFragment: 'priceFeed', values?: undefined): string;
 encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
 encodeFunctionData(functionFragment: 'resolve', values: [BigNumberish]): string;
+encodeFunctionData(functionFragment: 'resolveWithOracle', values?: undefined): string;
 encodeFunctionData(functionFragment: 'resolved', values?: undefined): string;
 encodeFunctionData(functionFragment: 'totalNo', values?: undefined): string;
 encodeFunctionData(functionFragment: 'totalYes', values?: undefined): string;
@@ -44,8 +46,10 @@ decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'participantAt', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'participantCount', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'placeBet', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'priceFeed', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'resolve', data: BytesLike): Result;
+decodeFunctionResult(functionFragment: 'resolveWithOracle', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'resolved', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'totalNo', data: BytesLike): Result;
 decodeFunctionResult(functionFragment: 'totalYes', data: BytesLike): Result;
@@ -234,6 +238,14 @@ decodeFunctionResult(functionFragment: 'yesPoolMultiplierE4', data: BytesLike): 
     
 
     
+    priceFeed: TypedContractMethod<
+      [],
+      [string],
+      'view'
+    >
+    
+
+    
     renounceOwnership: TypedContractMethod<
       [],
       [void],
@@ -244,6 +256,14 @@ decodeFunctionResult(functionFragment: 'yesPoolMultiplierE4', data: BytesLike): 
     
     resolve: TypedContractMethod<
       [o: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >
+    
+
+    
+    resolveWithOracle: TypedContractMethod<
+      [],
       [void],
       'nonpayable'
     >
@@ -368,6 +388,11 @@ getFunction(nameOrSignature: 'placeBet'): TypedContractMethod<
       [void],
       'nonpayable'
     >;
+getFunction(nameOrSignature: 'priceFeed'): TypedContractMethod<
+      [],
+      [string],
+      'view'
+    >;
 getFunction(nameOrSignature: 'renounceOwnership'): TypedContractMethod<
       [],
       [void],
@@ -375,6 +400,11 @@ getFunction(nameOrSignature: 'renounceOwnership'): TypedContractMethod<
     >;
 getFunction(nameOrSignature: 'resolve'): TypedContractMethod<
       [o: BigNumberish, ],
+      [void],
+      'nonpayable'
+    >;
+getFunction(nameOrSignature: 'resolveWithOracle'): TypedContractMethod<
+      [],
       [void],
       'nonpayable'
     >;

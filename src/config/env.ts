@@ -36,9 +36,14 @@ export const usdcAddress = (
 ) as Address | undefined;
 
 const rawPoolMarketAddress = import.meta.env.VITE_POOL_MARKET_ADDRESS?.trim();
+const rawSoccerOracleAddress = import.meta.env.VITE_SOCCER_ORACLE_ADDRESS?.trim();
 
 export const poolMarketAddress = (
   rawPoolMarketAddress && isAddress(rawPoolMarketAddress) ? rawPoolMarketAddress : undefined
+) as Address | undefined;
+
+export const soccerOracleAddress = (
+  rawSoccerOracleAddress && isAddress(rawSoccerOracleAddress) ? rawSoccerOracleAddress : undefined
 ) as Address | undefined;
 
 export const isPolyPredictConfigured = Boolean(polyPredictAddress && usdcAddress);

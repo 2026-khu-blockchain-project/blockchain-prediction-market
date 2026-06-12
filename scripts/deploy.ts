@@ -70,6 +70,7 @@ async function main() {
 
   let usdcAddress: string;
   let btcOracleAddress: string;
+  let soccerOracleAddress: string;
 
   if (networkName === "localhost" || networkName === "amoy" || networkName === "hardhat") {
     console.log("\n[1/3] MockUSDC 배포 중...");
@@ -84,15 +85,22 @@ async function main() {
       console.log("테스트 USDC 10,000 발행 완료");
     }
 
-    console.log("\n[오라클] MockV3Aggregator 배포 중...");
+    console.log("\n[오라클] MockV3Aggregator (BTC) 배포 중...");
     const mockOracle = await ethers.deployContract("MockV3Aggregator", [90000n * 10n**8n]); // 초기 가격 $90,000
     await mockOracle.waitForDeployment();
     btcOracleAddress = await mockOracle.getAddress();
-    console.log("MockV3Aggregator:", btcOracleAddress);
+    console.log("MockV3Aggregator BTC:", btcOracleAddress);
+
+    console.log("\n[오라클] MockV3Aggregator (Soccer) 배포 중...");
+    const soccerOracle = await ethers.deployContract("MockV3Aggregator", [1n]); // 초기 골득실차 +1 (대한민국 승리)
+    await soccerOracle.waitForDeployment();
+    soccerOracleAddress = await soccerOracle.getAddress();
+    console.log("MockV3Aggregator Soccer:", soccerOracleAddress);
   } else {
     usdcAddress = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
     console.log("Polygon USDC 사용:", usdcAddress);
     btcOracleAddress = "0xF0d50568e3A7e8259E16663972b11910F89E47Aa"; // Amoy BTC/USD Price Feed
+    soccerOracleAddress = "0x0000000000000000000000000000000000000000";
   }
 
   console.log("\n[2/3] PolyPredict 배포 중...");
@@ -102,7 +110,7 @@ async function main() {
   console.log("PolyPredict:", polyPredictAddress);
 
   console.log("\n[3/3] PoolBinaryMarket 배포 중...");
-  const poolMarket = await ethers.deployContract("PoolBinaryMarket", [usdcAddress]);
+  const poolMarket = await ethers.deployContract("PoolBinaryMarket", [usdcAddress, soccerOracleAddress]);
   await poolMarket.waitForDeployment();
   const poolMarketAddress = await poolMarket.getAddress();
   console.log("PoolBinaryMarket:", poolMarketAddress);
@@ -164,6 +172,7 @@ async function main() {
     `VITE_USDC_ADDRESS=${usdcAddress}\n` +
     `VITE_POOL_MARKET_ADDRESS=${poolMarketAddress}\n` +
     `VITE_MOCK_ORACLE_ADDRESS=${btcOracleAddress}\n` +
+    `VITE_SOCCER_ORACLE_ADDRESS=${soccerOracleAddress}\n` +
     `VITE_CHAIN_ID=${chainId}\n` +
     (networkName === "amoy" ? `VITE_AMOY_RPC_URL=${amoyRpc}\n` : "") +
     `VITE_WALLETCONNECT_PROJECT_ID=demo\n` +

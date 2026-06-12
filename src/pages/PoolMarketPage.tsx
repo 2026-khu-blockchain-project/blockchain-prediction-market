@@ -25,7 +25,8 @@ import {
   poolMarketAddress,
   usdcAddress,
 } from '../contracts/poolBinaryMarket';
-import { isDemoOnly } from '../config/env';
+import { isDemoOnly, soccerOracleAddress } from '../config/env';
+import { mockV3AggregatorAbi } from '../contracts/mockV3Aggregator';
 import { usePoolMarketDemo } from '../hooks/usePoolMarketDemo';
 import { USDC_DECIMALS, formatUsdc } from '../lib/market';
 import { readContract } from 'wagmi/actions';
@@ -41,7 +42,7 @@ import {
 } from '../components/ui';
 
 const POOL_QUESTION =
-  '바이에른 뮌헨이 2026 UEFA 챔피언스리그에서 우승할까? (풀 배팅 · 최대 10명)';
+  '대한민국 vs 멕시코 축구 결과 예측 (풀 배팅 · 최대 10명)';
 
 function PoolBar({ yes, no }: { yes: bigint; no: bigint }) {
   const total = yes + no;
@@ -55,8 +56,8 @@ function PoolBar({ yes, no }: { yes: bigint; no: bigint }) {
         <div className="bg-blue-500 transition-all" style={{ width: `${noPct}%` }} />
       </div>
       <div className="mt-2 flex justify-between text-xs font-bold text-slate-600">
-        <span>YES {yesPct.toFixed(1)}%</span>
-        <span>NO {noPct.toFixed(1)}%</span>
+        <span>대한민국 승리 (YES) {yesPct.toFixed(1)}%</span>
+        <span>멕시코 승/무 (NO) {noPct.toFixed(1)}%</span>
       </div>
     </div>
   );
@@ -133,13 +134,13 @@ function PoolChart({ currentPrice }: { currentPrice: number }) {
   return (
     <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">실시간 가격 추이 (센트 ¢)</span>
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">실시간 배당비율 추이 (센트 ¢)</span>
         <div className="flex gap-4 text-xs font-bold">
           <span className="flex items-center gap-1 text-emerald-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" /> YES
+            <span className="h-2 w-2 rounded-full bg-emerald-500" /> 대한민국 승 (YES)
           </span>
           <span className="flex items-center gap-1 text-blue-400">
-            <span className="h-2 w-2 rounded-full bg-blue-500" /> NO
+            <span className="h-2 w-2 rounded-full bg-blue-500" /> 멕시코 승/무 (NO)
           </span>
         </div>
       </div>
@@ -155,7 +156,7 @@ function PoolChart({ currentPrice }: { currentPrice: number }) {
               <Tooltip
                 contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
                 labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
-                formatter={(value, name) => [`${value}%`, name === 'yes' ? 'YES 가격' : 'NO 가격']}
+                formatter={(value, name) => [`${value}%`, name === 'yes' ? '대한민국 승리 배당비율' : '멕시코 승/무 배당비율']}
               />
               <Line
                 type="monotone"
@@ -180,14 +181,14 @@ function PoolChart({ currentPrice }: { currentPrice: number }) {
         {/* 우측 실시간 수치판 영역 */}
         <div className="flex w-full md:w-1/4 flex-row md:flex-col justify-around md:justify-center md:gap-6 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6">
           <div className="text-center md:text-left">
-            <span className="text-xs font-bold text-slate-400 block mb-1">YES 가격</span>
+            <span className="text-xs font-bold text-slate-400 block mb-1">대한민국 승리 비율</span>
             <div className="flex items-baseline justify-center md:justify-start gap-1">
               <span className="text-3xl font-black text-emerald-400">{yesVal}%</span>
               <span className="text-xs font-bold text-slate-500">({yesVal}¢)</span>
             </div>
           </div>
           <div className="text-center md:text-left mt-0 md:mt-4">
-            <span className="text-xs font-bold text-slate-400 block mb-1">NO 가격</span>
+            <span className="text-xs font-bold text-slate-400 block mb-1">멕시코 승/무 비율</span>
             <div className="flex items-baseline justify-center md:justify-start gap-1">
               <span className="text-3xl font-black text-blue-400">{noVal}%</span>
               <span className="text-xs font-bold text-slate-500">({noVal}¢)</span>
@@ -320,7 +321,7 @@ function PoolDemoPanel() {
             type="button"
             onClick={() => void demo.placeBet(true, betAmt)}
           >
-            YES 배팅
+            대한민국 승리 배팅
           </button>
           <button
             className={cn(buttonStyles('primary'), 'bg-blue-600')}
@@ -328,7 +329,7 @@ function PoolDemoPanel() {
             type="button"
             onClick={() => void demo.placeBet(false, betAmt)}
           >
-            NO 배팅
+            멕시코 승/무 배팅
           </button>
           <button
             className={buttonStyles('secondary')}
@@ -336,7 +337,7 @@ function PoolDemoPanel() {
             type="button"
             onClick={() => void demo.resolveDemo(true)}
           >
-            YES 승리 정산
+            대한민국 승리 확정
           </button>
           <button
             className={buttonStyles('secondary')}
@@ -344,7 +345,7 @@ function PoolDemoPanel() {
             type="button"
             onClick={() => void demo.resolveDemo(false)}
           >
-            NO 승리 정산
+            멕시코 승/무 확정
           </button>
           <button
             className={buttonStyles('secondary')}
@@ -371,6 +372,7 @@ function PoolChainPanel() {
   const [betAmt, setBetAmt] = useState('10');
   const [approveAmt, setApproveAmt] = useState('10');
   const [side, setSide] = useState<'yes' | 'no'>('yes');
+  const [soccerGoalDiff, setSoccerGoalDiff] = useState('1');
   const { writeContractAsync, isPending, error } = useWriteContract();
 
   const enabled = Boolean(poolMarketAddress && usdcAddress);
@@ -479,6 +481,29 @@ function PoolChainPanel() {
     void resolved.refetch();
   }
 
+  async function runResolveWithOracle() {
+    if (!poolMarketAddress) return;
+    const h = await writeContractAsync({
+      address: poolMarketAddress,
+      abi: poolBinaryMarketAbi,
+      functionName: 'resolveWithOracle',
+    });
+    await waitForTransactionReceipt(config, { hash: h });
+    void resolved.refetch();
+  }
+
+  async function runUpdateSoccerOracle() {
+    if (!soccerOracleAddress) return;
+    const diff = BigInt(soccerGoalDiff);
+    const h = await writeContractAsync({
+      address: soccerOracleAddress as `0x${string}`,
+      abi: mockV3AggregatorAbi,
+      functionName: 'updateAnswer',
+      args: [diff],
+    });
+    await waitForTransactionReceipt(config, { hash: h });
+  }
+
   async function runClaim() {
     if (!poolMarketAddress) return;
     const h = await writeContractAsync({
@@ -514,10 +539,10 @@ function PoolChainPanel() {
         <PoolBar yes={ty} no={tn} />
         <PoolChart currentPrice={yesPct} />
         <dl className="mt-6 grid gap-3 sm:grid-cols-2 text-sm">
-          <Stat label="Pot YES / NO" value={`${formatUsdc(ty)} / ${formatUsdc(tn)}`} />
-          <Stat label="내재 확률 YES" value={`${yesPct.toFixed(1)}%`} />
-          <Stat label="내 YES" value={formatUsdc((myYes.data as bigint) ?? 0n)} />
-          <Stat label="내 NO" value={formatUsdc((myNo.data as bigint) ?? 0n)} />
+          <Stat label="총 배팅금 (대한민국 / 멕시코)" value={`${formatUsdc(ty)} / ${formatUsdc(tn)}`} />
+          <Stat label="내재 확률 (대한민국 승리)" value={`${yesPct.toFixed(1)}%`} />
+          <Stat label="내 대한민국 승리 베팅" value={formatUsdc((myYes.data as bigint) ?? 0n)} />
+          <Stat label="내 멕시코 승/무 베팅" value={formatUsdc((myNo.data as bigint) ?? 0n)} />
         </dl>
       </SurfaceCard>
 
@@ -532,14 +557,14 @@ function PoolChainPanel() {
             type="button"
             onClick={() => setSide('yes')}
           >
-            YES
+            대한민국 승리 (YES)
           </button>
           <button
             className={cn(buttonStyles('secondary'), side === 'no' && 'ring-2 ring-blue-400')}
             type="button"
             onClick={() => setSide('no')}
           >
-            NO
+            멕시코 승리/무승부 (NO)
           </button>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -559,17 +584,54 @@ function PoolChainPanel() {
           onClick={() => void runApproveAndBet()}
         >
           {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          USDC 승인 후 {side.toUpperCase()} 배팅
+          USDC 승인 후 {side === 'yes' ? '대한민국 승리' : '멕시코 승/무'} 배팅
         </button>
 
         {isOwner && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button className={buttonStyles('secondary')} disabled={isPending} type="button" onClick={() => void runResolve(true)}>
-              YES 승리 확정
-            </button>
-            <button className={buttonStyles('secondary')} disabled={isPending} type="button" onClick={() => void runResolve(false)}>
-              NO 승리 확정
-            </button>
+          <div className="mt-6 space-y-4 border-t border-slate-100 pt-6">
+            <h4 className="text-sm font-bold text-slate-800">⚽ 스포츠 오라클 결과 제어 및 정산 (관리자)</h4>
+            
+            {soccerOracleAddress && (
+              <div className="flex flex-col md:flex-row gap-4 items-end bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                <label className="block w-full md:w-64">
+                  <span className="text-xs font-bold text-slate-600 block mb-2">모의 축구 골득실차 (대한민국 - 멕시코)</span>
+                  <input
+                    className={cn(fieldStyles, 'bg-white')}
+                    type="number"
+                    value={soccerGoalDiff}
+                    onChange={(e) => setSoccerGoalDiff(e.target.value)}
+                  />
+                  <span className="text-[10px] text-slate-500 mt-1 block">
+                    * 0 초과 (예: 1) = 대한민국 승리 / 0 이하 (예: 0, -1) = 멕시코 승/무
+                  </span>
+                </label>
+                <button
+                  className={cn(buttonStyles('secondary'), 'bg-amber-600 hover:bg-amber-700 text-white w-full md:w-auto')}
+                  disabled={isPending}
+                  type="button"
+                  onClick={() => void runUpdateSoccerOracle()}
+                >
+                  오라클 골득실 업데이트
+                </button>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              <button className={buttonStyles('secondary')} disabled={isPending} type="button" onClick={() => void runResolve(true)}>
+                대한민국 승리 확정 (수동)
+              </button>
+              <button className={buttonStyles('secondary')} disabled={isPending} type="button" onClick={() => void runResolve(false)}>
+                멕시코 승/무 확정 (수동)
+              </button>
+              <button
+                className={cn(buttonStyles('primary'), 'bg-emerald-600 text-white')}
+                disabled={isPending}
+                type="button"
+                onClick={() => void runResolveWithOracle()}
+              >
+                오라클 기반 자동 확정
+              </button>
+            </div>
           </div>
         )}
 

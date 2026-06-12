@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./AggregatorV3Interface.sol";
 
 /**
  * @title PoolBinaryMarket
@@ -11,6 +12,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  */
 contract PoolBinaryMarket is Ownable, ReentrancyGuard {
     IERC20 public immutable usdc;
+    address public priceFeed;
 
     uint8 public constant DECIMALS = 6;
     uint256 public constant MAX_STAKE_PER_USER = 1000 * 10 ** uint256(DECIMALS);
@@ -39,8 +41,9 @@ contract PoolBinaryMarket is Ownable, ReentrancyGuard {
     event MarketResolved(Outcome o);
     event Claimed(address indexed user, uint256 amount);
 
-    constructor(address _usdc) Ownable(msg.sender) {
+    constructor(address _usdc, address _priceFeed) Ownable(msg.sender) {
         usdc = IERC20(_usdc);
+        priceFeed = _priceFeed;
     }
 
     function participantCount() external view returns (uint256) {
@@ -102,6 +105,24 @@ contract PoolBinaryMarket is Ownable, ReentrancyGuard {
     function resolve(Outcome o) external onlyOwner {
         require(o == Outcome.Yes || o == Outcome.No, "invalid");
         require(outcome == Outcome.None, "already");
+        resolved = true;
+        outcome = o;
+        emit MarketResolved(o);
+    }
+
+    function resolveWithOracle() external {
+        require(!resolved, "already resolved");
+        require(outcome == Outcome.None, "already");
+        require(priceFeed != address(0), "price feed not set");
+
+        AggregatorV3Interface feed = AggregatorV3Interface(priceFeed);
+        (, int256 price, , , ) = feed.latestRoundData();
+
+        // price 가 대한민국 골 득실차라 가정 (대한민국 점수 - 멕시코 점수)
+        // 0보다 크면 대한민국 승리 (Outcome.Yes)
+        // 0 이하이면 멕시코 승리 또는 무승부 (Outcome.No)
+        Outcome o = price > 0 ? Outcome.Yes : Outcome.No;
+
         resolved = true;
         outcome = o;
         emit MarketResolved(o);
