@@ -137,6 +137,14 @@ async function main() {
   await oracleTx.wait();
   console.log("  ✓ 2026년 비트코인 가격이 $100,000 이상을 유지할까? (오라클 연동)");
 
+  console.log("\n[소유권 이전] 관리자(Owner) 권한을 사용자 지갑으로 이전 중...");
+  const targetOwner = "0x2fcC7DC259373b6B9094f36833Cfa351b043a71e";
+  const txOwner1 = await polyPredict.transferOwnership(targetOwner);
+  await txOwner1.wait();
+  const txOwner2 = await poolMarket.transferOwnership(targetOwner);
+  await txOwner2.wait();
+  console.log(`✓ 관리자 권한이 ${targetOwner} 로 성공적으로 이전되었습니다.`);
+
   const marketCount = await polyPredict.marketCount();
   console.log(`총 ${marketCount}개 시장 생성 완료`);
 
