@@ -3,7 +3,7 @@ import { useReadContract, useReadContracts } from 'wagmi';
 import { ContractConfigError } from '../components/ContractConfigError';
 import { LoadingCard } from '../components/LoadingCard';
 import { MarketCard } from '../components/MarketCard';
-import { ButtonLink, EmptyState, PageShell, SectionHeader, StatCard } from '../components/ui';
+import { AlertMessage, ButtonLink, EmptyState, PageShell, SectionHeader, StatCard } from '../components/ui';
 import {
   isMarketAddressConfigured,
   predictionMarketAbi,
@@ -48,7 +48,8 @@ function MarketsContent({
     (marketsQuery.data as PolyPredictMarketRaw[] | undefined)?.map((marketResult, index) =>
       toMarket(BigInt(index), marketResult),
     ) ?? [];
-  const isLoading = marketCountQuery.isPending || marketsQuery.isPending;
+  const isLoading = marketCountQuery.isLoading || marketsQuery.isLoading;
+  const loadError = marketCountQuery.error ?? marketsQuery.error;
   const openMarketCount = markets.filter((market) => !market.resolved).length;
 
   return (
@@ -71,7 +72,16 @@ function MarketsContent({
         </div>
       )}
 
-      {!isLoading && marketCount === 0n && (
+      {!isLoading && loadError && (
+        <div className="mt-8">
+          <AlertMessage tone="error">
+            온체인 데이터를 불러오지 못했습니다. 지갑 네트워크와 RPC 설정(Polygon Amoy, chainId 80002)이
+            배포된 컨트랙트와 일치하는지 확인해주세요.
+          </AlertMessage>
+        </div>
+      )}
+
+      {!isLoading && !loadError && marketCount === 0n && (
         <div className="mt-8">
           <EmptyState
             icon={<BarChart3 className="h-7 w-7" aria-hidden="true" />}

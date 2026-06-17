@@ -132,7 +132,7 @@ function PortfolioContent({
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
   const isLoading =
     isConnected &&
-    (marketCountQuery.isPending || marketsQuery.isPending || sharesQuery.isPending);
+    (marketCountQuery.isLoading || marketsQuery.isLoading || sharesQuery.isLoading);
   const isBusy = isPending || isConfirming;
 
   useEffect(() => {
